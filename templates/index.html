@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            height: 100vh;
+            background-color: #f4f4f4;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+        }
+        .left-section {
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            margin: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            height: calc(100vh - 40px);
+            position: relative;
+        }
+        .chat-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        .chat-box div {
+            margin: 5px 0;
+        }
+        .chat-box .message {
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #e9ecef;
+        }
+        .chat-box .message.user {
+            background-color: #007bff;
+            color: #fff;
+            align-self: flex-end;
+        }
+        .chat-box .message.bot {
+            background-color: #e9ecef;
+            color: #000;
+        }
+        .right-section {
+            width: 300px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin: 20px;
+            height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+        .right-section h2 {
+            margin-top: 0;
+        }
+        input[type="file"], input[type="text"], button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            flex: 1;
+        }
+        input[type="text"] {
+            box-sizing: border-box;
+            flex: 1;
+        }
+        button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            padding: 10px 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Flexbox for input and button */
+        .input-container {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        /* Adjust layout for mobile screens */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .left-section, .right-section {
+                width: 100%;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Left Section for Displaying Uploaded PDF -->
+        <div class="left-section" id="pdfDisplay">
+            <h2>Uploaded Document</h2>
+            <!-- PDF content will be displayed here -->
+             
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <div class="chat-box" id="chatBox">
+                <!-- Messages will be appended here -->
+            </div>
+            <form id="askForm" style="display: flex; align-items: center;">
+                <div class="input-container">
+                    <input type="text" name="question" placeholder="Ask your question..." required>
+                    <button type="submit">Send</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Right Section for Upload -->
+        <div class="right-section">
+            <h2>Upload Documents</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="files" multiple required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            var formData = new FormData(this);
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            }).then(response => response.text())
+              .then(data => {
+                  // Show upload status in chat box
+                  const chatBox = document.getElementById('chatBox');
+                  const message = document.createElement('div');
+                  message.className = 'message bot';
+                  message.textContent = 'Files uploaded successfully!';
+                  chatBox.appendChild(message);
+
+                  // Show uploaded PDF in left section
+                  const pdfDisplay = document.getElementById('pdfDisplay');
+                  pdfDisplay.innerHTML = '<h2>Uploaded Document</h2><p>Document content will be shown here.</p>'; // Modify based on actual PDF rendering
+              }).catch(error => {
+                  console.error('Error:', error);
+                  const chatBox = document.getElementById('chatBox');
+                  const message = document.createElement('div');
+                  message.className = 'message bot';
+                  message.textContent = 'Error uploading files.';
+                  chatBox.appendChild(message);
+              });
+        });
+
+        document.getElementById('askForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const question = this.querySelector('input[name="question"]').value;
+
+            const chatBox = document.getElementById('chatBox');
+            
+            // Display user's question
+            const userMessage = document.createElement('div');
+            userMessage.className = 'message user';
+            userMessage.textContent = question;
+            chatBox.appendChild(userMessage);
+
+            // Fetch answer from server
+            fetch('/ask', {
+                method: 'POST',
+                body: JSON.stringify({
+                    question: question
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  // Display bot's answer
+                  const botMessage = document.createElement('div');
+                  botMessage.className = 'message bot';
+                  botMessage.textContent = data.answer || 'No answer found.';
+                  chatBox.appendChild(botMessage);
+              }).catch(error => {
+                  console.error('Error:', error);
+                  const botMessage = document.createElement('div');
+                  botMessage.className = 'message bot';
+                  botMessage.textContent = 'An error occurred while fetching the answer.';
+                  chatBox.appendChild(botMessage);
+              });
+
+            // Clear input field
+            this.querySelector('input[name="question"]').value = '';
+        });
+
+        // Handle 'Enter' key press for form submission
+        document.querySelector('input[name="question"]').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                document.getElementById('askForm').dispatchEvent(new Event('submit'));
+            }
+        });
+    </script>
+</body>
+</html>
