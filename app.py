@@ -119,5 +119,9 @@ def enhance_answer(question, initial_answer):
         print(f"Error during API request: {e}")
         return 'An error occurred while enhancing the answer.'
 
+# if __name__ == '__main__':
+#     app.run(debug=True)
+
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=5000)
